@@ -1,0 +1,13 @@
+C:\Users\Amy\Documents\RAD Studio\Projects\SEServerPlugins\KingOfTheHill\SEKingOfTheHillPlugin\SEKingOfTheHillPlugin\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\Amy\Documents\RAD Studio\Projects\SEServerPlugins\KingOfTheHill\SEKingOfTheHillPlugin\SEKingOfTheHillPlugin\bin\Debug\SEKingOfTheHillPlugin.dll
+C:\Users\Amy\Documents\RAD Studio\Projects\SEServerPlugins\KingOfTheHill\SEKingOfTheHillPlugin\SEKingOfTheHillPlugin\bin\Debug\SEKingOfTheHillPlugin.pdb
+C:\Users\Amy\Documents\RAD Studio\Projects\SEServerPlugins\KingOfTheHill\SEKingOfTheHillPlugin\SEKingOfTheHillPlugin\bin\Debug\Sandbox.Common.dll
+C:\Users\Amy\Documents\RAD Studio\Projects\SEServerPlugins\KingOfTheHill\SEKingOfTheHillPlugin\SEKingOfTheHillPlugin\bin\Debug\Sandbox.Common.XmlSerializers.dll
+C:\Users\Amy\Documents\RAD Studio\Projects\SEServerPlugins\KingOfTheHill\SEKingOfTheHillPlugin\SEKingOfTheHillPlugin\bin\Debug\SEModAPI.dll
+C:\Users\Amy\Documents\RAD Studio\Projects\SEServerPlugins\KingOfTheHill\SEKingOfTheHillPlugin\SEKingOfTheHillPlugin\bin\Debug\SEModAPIExtensions.dll
+C:\Users\Amy\Documents\RAD Studio\Projects\SEServerPlugins\KingOfTheHill\SEKingOfTheHillPlugin\SEKingOfTheHillPlugin\bin\Debug\SEModAPIInternal.dll
+C:\Users\Amy\Documents\RAD Studio\Projects\SEServerPlugins\KingOfTheHill\SEKingOfTheHillPlugin\SEKingOfTheHillPlugin\bin\Debug\VRage.Common.dll
+C:\Users\Amy\Documents\RAD Studio\Projects\SEServerPlugins\KingOfTheHill\SEKingOfTheHillPlugin\SEKingOfTheHillPlugin\bin\Debug\VRage.Library.dll
+C:\Users\Amy\Documents\RAD Studio\Projects\SEServerPlugins\KingOfTheHill\SEKingOfTheHillPlugin\SEKingOfTheHillPlugin\bin\Debug\VRage.Math.dll
+C:\Users\Amy\Documents\RAD Studio\Projects\SEServerPlugins\KingOfTheHill\SEKingOfTheHillPlugin\SEKingOfTheHillPlugin\obj\Debug\SEKingOfTheHillPlugin.dll
+C:\Users\Amy\Documents\RAD Studio\Projects\SEServerPlugins\KingOfTheHill\SEKingOfTheHillPlugin\SEKingOfTheHillPlugin\obj\Debug\SEKingOfTheHillPlugin.pdb
