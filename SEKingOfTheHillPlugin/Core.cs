@@ -84,6 +84,7 @@ namespace SEKingOfTheHillPlugin
         private Vector3 hillPosition = new Vector3(0,0,0);
         private long hillEntityID = -1;
         private int strikes = 0;
+        private bool errorLastLoop = false;
 
         private Int32 roundSecondsRemaining;
        
@@ -128,108 +129,139 @@ namespace SEKingOfTheHillPlugin
         {
             while (m_running)
             {
-                Thread.Sleep(1000);
-              //  Console.WriteLine("Doing tick! " + roundSecondsRemaining + " seconds remaining in round.");
-                //check on hill, make sure it's there and replace it if it isn't
-                CubeGridEntity hill = getHill();
-                
-                MyObjectBuilder_Beacon beacon = null;
-                if (hill != null)
+                try
                 {
-                 //   Console.WriteLine("Got the hill, looking for beacon");
-                    
-                    foreach (MyObjectBuilder_CubeBlock cubeBlock in hill.BaseCubeBlocks)
+                    Thread.Sleep(1000);
+                    //  Console.WriteLine("Doing tick! " + roundSecondsRemaining + " seconds remaining in round.");
+                    //check on hill, make sure it's there and replace it if it isn't
+                    CubeGridEntity hill = getHill();
+
+                    MyObjectBuilder_Beacon beacon = null;
+                    if (hill != null)
                     {
-                        if (cubeBlock.TypeId == typeof(MyObjectBuilder_Beacon))
+                        //   Console.WriteLine("Got the hill, looking for beacon");
+
+                        foreach (MyObjectBuilder_CubeBlock cubeBlock in hill.BaseCubeBlocks)
                         {
-                            if (((MyObjectBuilder_Beacon)cubeBlock).CustomName.Equals("The Hill"))
-                                beacon = (MyObjectBuilder_Beacon)cubeBlock;
+                            if (cubeBlock.TypeId == typeof(MyObjectBuilder_Beacon))
+                            {
+                                if (((MyObjectBuilder_Beacon)cubeBlock).CustomName.Equals("The Hill"))
+                                    beacon = (MyObjectBuilder_Beacon)cubeBlock;
+                            }
                         }
-                    }
-                    if (beacon == null)
-                    {
-                        strikes++;
-                        Console.WriteLine("Could not find beacon! Strike " + strikes);
-                        if (strikes >= 3) //there seems to be an issue where listing blocks in a cube grid is not 100% accurate. This is just a failsafe.
+                        //need to check for power & integrity here, set beacon to null if they're not acceptable
+
+                        if (beacon == null)
                         {
-                            ChatManager.Instance.SendPublicChatMessage("The hill has been freed!");
-                            Console.WriteLine("Hill beacon has been destroyed!");
-                            createNewHill();
-                            strikes = 0;
+                            strikes++;
+                            Console.WriteLine("Could not find beacon! Strike " + strikes);
+                            if (strikes >= 3) //there seems to be an issue where listing blocks in a cube grid is not 100% accurate. This is just a failsafe.
+                            {
+                                ChatManager.Instance.SendPublicChatMessage("The hill has been freed!");
+                                Console.WriteLine("Hill beacon has been destroyed!");
+                                createNewHill();
+                                strikes = 0;
+                            }
+                            else
+                            {
+                                awardRoundPoint(previousOwner);
+                            }
                         }
                         else
                         {
-                            awardRoundPoint(previousOwner);
+                            strikes = 0;
+                            beacon.CustomName = "The Hill";
+                            beacon.BroadcastRadius = -1; //force infinity
+                            beacon.Enabled = true;
+
+
+
+                            //hill exists, and is working - check for ownership and award a point
+                            //Console.WriteLine("Beacon owner is " + beacon.Owner);
+                            Faction pointWinner = null;
+                            foreach (Faction f in FactionsManager.Instance.Factions)
+                            {
+                                foreach (FactionMember m in f.Members)
+                                    if (m.PlayerId == beacon.Owner)
+                                        pointWinner = f;
+                            }
+                            if (pointWinner != previousOwner && pointWinner != null)
+                                ChatManager.Instance.SendPublicChatMessage("The beacon has been captured by " + pointWinner.Name + "!");
+                            previousOwner = pointWinner;
+
+                            awardRoundPoint(pointWinner);
                         }
+
                     }
                     else
                     {
-                        strikes = 0;
-                        beacon.CustomName = "The Hill";
-                        beacon.BroadcastRadius = -1; //force infinity
-                        beacon.Enabled = true;
-                        
-                        //hill exists, and is working - check for ownership and award a point
-                        //Console.WriteLine("Beacon owner is " + beacon.Owner);
-                        Faction pointWinner = null;
-                        foreach (Faction f in FactionsManager.Instance.Factions)
-                        {
-                            foreach(FactionMember m in f.Members)
-                                if(m.PlayerId == beacon.Owner)
-                                    pointWinner = f; 
-                        }
-                        if (pointWinner != previousOwner && pointWinner != null)
-                            ChatManager.Instance.SendPublicChatMessage("The beacon has been captured by " + pointWinner.Name+"!");
-                        previousOwner = pointWinner;
-
-                        awardRoundPoint(pointWinner);
+                        ChatManager.Instance.SendPublicChatMessage("The hill has been freed!");
+                        Console.WriteLine("No hill found! Creating new one.");
+                        createNewHill();
                     }
 
-                }
-                else
-                {
-                    ChatManager.Instance.SendPublicChatMessage("The hill has been freed!");
-                    Console.WriteLine("No hill found! Creating new one.");
-                    createNewHill();
-                }
+                    roundSecondsRemaining--;
+                    if (roundSecondsRemaining % 30 == 0)
+                        ChatManager.Instance.SendPublicChatMessage("There are " + roundSecondsRemaining + " seconds remaining in this round!");
 
-                roundSecondsRemaining--;
-                if (roundSecondsRemaining % 30 == 0)
-                    ChatManager.Instance.SendPublicChatMessage("There are " + roundSecondsRemaining + " seconds remaining in this round!");
+                    if (roundSecondsRemaining <= 10)
+                        ChatManager.Instance.SendPublicChatMessage("This round will finish in " + roundSecondsRemaining + " seconds!");
 
-                if(roundSecondsRemaining <= 10)
-                    ChatManager.Instance.SendPublicChatMessage("This round will finish in "+roundSecondsRemaining+" seconds!");
-                        
 
-                if (roundSecondsRemaining <= 0)
-                {
-                    roundSecondsRemaining = roundIntervalSeconds;
-                    Faction winningFaction = null;
-                    Int32 winningScore = 0;
-                    foreach (Faction f in roundPoints.Keys)
+                    if (roundSecondsRemaining <= 0)
                     {
-                        Int32 factionScore = 0;
-                        roundPoints.TryGetValue(f, out factionScore);
-                        if (factionScore > winningScore)
+                        roundSecondsRemaining = roundIntervalSeconds;
+                        Faction winningFaction = null;
+                        Int32 winningScore = 0;
+                        foreach (Faction f in roundPoints.Keys)
                         {
-                            winningFaction = f;
-                            winningScore = factionScore;
+                            Int32 factionScore = 0;
+                            roundPoints.TryGetValue(f, out factionScore);
+                            if (factionScore > winningScore)
+                            {
+                                winningFaction = f;
+                                winningScore = factionScore;
+                            }
                         }
+                        if (winningFaction != null)
+                        {
+                            awardGamePoint(winningFaction);
+                            Console.WriteLine(winningFaction.Name + " won the round with " + winningScore + " points!");
+                            ChatManager.Instance.SendPublicChatMessage(winningFaction.Name + " won the round with " + winningScore + " points!");
+                        }
+                        else
+                        {
+                            ChatManager.Instance.SendPublicChatMessage("No faction won this round!");
+                            Console.WriteLine("No faction won this round!");
+                        }
+                        //createNewHill(); //only create new hill when it's been destroyed
+                        roundPoints.Clear(); //start a new round
+                        ChatManager.Instance.SendPublicChatMessage("A new round has been started. It will last for " + roundIntervalSeconds + " seconds!");
                     }
-                    if (winningFaction != null)
+                    errorLastLoop = false;
+
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine("Exception occurred in main thread of King Of The Hill Plugin. Details: " + e);
+                    if (errorLastLoop)
                     {
-                        awardGamePoint(winningFaction);
-                        Console.WriteLine(winningFaction.Name + " won the round with " + winningScore + " points!");
-                        ChatManager.Instance.SendPublicChatMessage(winningFaction.Name + " won the round with " + winningScore + " points!");                        
+                        Console.WriteLine("Unable to continue, disabling King Of The Hill Plugin!");
+                        try
+                        {
+                            ChatManager.Instance.SendPublicChatMessage("An error has occurred in the King of the Hill plugin, an it has been disabled. Please contact the server admin.");
+                        }
+                        catch (Exception chatexception)
+                        {
+                            //discard exceptions here, we were just trying to warn people, it doesn't matter if it fails
+                        }
+                        m_running = false; //terminate the main thread
                     }
                     else
                     {
-                        ChatManager.Instance.SendPublicChatMessage("No faction won this round!");
-                        Console.WriteLine("No faction won this round!");
+                        errorLastLoop = true;
+                        Console.WriteLine("Attempting to continue...");
                     }
-                    //createNewHill(); //only create new hill when it's been destroyed
-                    roundPoints.Clear(); //start a new round
-                    ChatManager.Instance.SendPublicChatMessage("A new round has been started. It will last for " + roundIntervalSeconds + " seconds!");
                 }
             }
         }
