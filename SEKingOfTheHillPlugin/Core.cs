@@ -27,7 +27,7 @@ using SEModAPIInternal.API.Server;
 
 namespace SEKingOfTheHillPlugin
 {
-    public class Core : PluginBase
+    public class Core : PluginBase, IChatEventHandler
     {
         #region "Properties"
 
@@ -125,7 +125,7 @@ namespace SEKingOfTheHillPlugin
             return;
         }
 
-        public void main()
+        private void main()
         {
             while (m_running)
             {
@@ -380,6 +380,43 @@ namespace SEKingOfTheHillPlugin
             }
         }
 
+        public void OnChatSent(ChatManager.ChatEvent ce)
+        {
+        }
+
+        public void OnChatReceived(ChatManager.ChatEvent ce)
+        {
+
+            if (ce.sourceUserId == 0)
+                return;
+
+            if (ce.message == "/leaderboard")
+            {
+                List<Tuple<Faction, Int32>> scores = new List<Tuple<Faction, Int32>>();
+                foreach (Faction f in gamePoints.Keys)
+                {
+                    Int32 points = 0;
+                    int i = 0;
+                    bool placed = false;
+                    gamePoints.TryGetValue(f, out points);
+                    while (i < scores.Count && !placed)
+                    {
+                        if (scores[i].Item2 > points)
+                            placed = true;
+                        else
+                            i++;
+                    }
+                    scores.Insert(i, new Tuple<Faction, int>(f, points));
+                }
+
+                String leadermessage = "Top "+Math.Min(scores.Count, 5)+":\n";
+                for (int i = 0; i < Math.Min(scores.Count, 5); i++)
+                {
+                    leadermessage += scores[i].Item1.Name + ": " + scores[i].Item2 + " wins\n";
+                }
+                ChatManager.Instance.SendPrivateChatMessage(ce.sourceUserId, leadermessage);
+            }
+        }
 
     }
 }
