@@ -16,7 +16,11 @@ Configuration can only be done through the SE Server Extender's plugin window. T
 Chat commands
 ===============
 /leaderboard - shows the current top 5 factions and their scores.
+
 /kothenable - enables the plugin if it has been disabled.
+
 /kothdisable - disables the plugin if it is enabled.
+
 /kothreset - resets all scores and restarts the rounds.
+
 /kothcleanup - Ideally this shouldn't need to be used, but if for some reason the hill has been duplicated, this forces the hill to be destroyed and rebuilt.
