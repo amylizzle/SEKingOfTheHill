@@ -82,7 +82,7 @@ namespace SEKingOfTheHillPlugin
         }
 
         private Vector3 hillPosition = new Vector3(0,0,0);
-        private long hillEntityID = -1;
+        private long hillEntityID = 0;
         private int strikes = 0;
         private bool errorLastLoop = false;
 
@@ -102,6 +102,8 @@ namespace SEKingOfTheHillPlugin
             hillPath = Path.Combine(MyFileSystem.ModsPath, "KingOfTheHill");
             hillPath = Path.Combine(hillPath,"hill.sbc");
             Console.WriteLine("King of the Hill plugin initialised!");
+
+            cleanUpHill();
 
             m_running = true;
             mainloop = new Thread(main);
@@ -136,17 +138,17 @@ namespace SEKingOfTheHillPlugin
                     //check on hill, make sure it's there and replace it if it isn't
                     CubeGridEntity hill = getHill();
 
-                    MyObjectBuilder_Beacon beacon = null;
+                    BeaconEntity beacon = null;
                     if (hill != null)
                     {
                         //   Console.WriteLine("Got the hill, looking for beacon");
 
-                        foreach (MyObjectBuilder_CubeBlock cubeBlock in hill.BaseCubeBlocks)
+                        foreach (CubeBlockEntity cubeBlock in hill.CubeBlocks)
                         {
-                            if (cubeBlock.TypeId == typeof(MyObjectBuilder_Beacon))
+                            if (cubeBlock is BeaconEntity)
                             {
-                                if (((MyObjectBuilder_Beacon)cubeBlock).CustomName.Equals("The Hill"))
-                                    beacon = (MyObjectBuilder_Beacon)cubeBlock;
+                                if (((BeaconEntity)cubeBlock).CustomName.Equals("The Hill"))
+                                    beacon = (BeaconEntity)cubeBlock;
                             }
                         }
                         //need to check for power & integrity here, set beacon to null if they're not acceptable
@@ -171,7 +173,7 @@ namespace SEKingOfTheHillPlugin
                         {
                             strikes = 0;
                             beacon.CustomName = "The Hill";
-                            beacon.BroadcastRadius = -1; //force infinity
+                            beacon.BroadcastRadius = 1000000; //force infinity
                             beacon.Enabled = true;
 
 
@@ -272,8 +274,7 @@ namespace SEKingOfTheHillPlugin
         private CubeGridEntity getHill()
         {
           //  Console.WriteLine("Getting the hill...");
-            if (hillEntityID == -1)
-                return null;
+            
 
             List<CubeGridEntity> entitites = SectorObjectManager.Instance.GetTypedInternalData<CubeGridEntity>();
             foreach(CubeGridEntity c in entitites)
@@ -291,24 +292,36 @@ namespace SEKingOfTheHillPlugin
             return null;
         }
 
-        //deletes the currentHill if not null, then creates a new one
-        private void createNewHill()
+        private void cleanUpHill()
         {
-            try
+            bool cleanedUp = true;
+            while (cleanedUp)
             {
+                cleanedUp = false;
                 List<CubeGridEntity> entitites = SectorObjectManager.Instance.GetTypedInternalData<CubeGridEntity>();
-                
+
                 foreach (CubeGridEntity c in entitites)
                 {
-                    if (Vector3.Distance(c.Position,hillPosition) < 20) //clear space for the hill
+                    if (Vector3.Distance(c.Position, hillPosition) < 10) //clear space for the hill - 10m radius
                     {
-                        Console.WriteLine("Deleting entity at " + c.Position + " with name " + c.Name+" and EntityID "+c.EntityId);
+                        cleanedUp = true;
+                        Console.WriteLine("Deleting entity at " + c.Position + " with name " + c.Name + " and EntityID " + c.EntityId);
                         foreach (CubeBlockEntity cb in c.CubeBlocks)
                             cb.BuildPercent = -1;
 
                         c.Dispose();
                     }
                 }
+            }
+            
+        }
+
+        //deletes the currentHill if not null, then creates a new one
+        private void createNewHill()
+        {
+            try
+            {
+                cleanUpHill();
                 
                 Console.WriteLine("Creating new hill from " + hillPath);
                 
@@ -389,6 +402,56 @@ namespace SEKingOfTheHillPlugin
 
             if (ce.sourceUserId == 0)
                 return;
+
+            if (ce.message == "/kothdisable")
+            {
+                if (PlayerManager.Instance.IsUserAdmin(ce.sourceUserId) && m_running)
+                {
+                    m_running = false;
+
+                    //shut down main loop
+                    mainloop.Join(1000);
+                    mainloop.Abort();
+                    cleanUpHill();
+                    ChatManager.Instance.SendPublicChatMessage("King of the Hill mode disabled. Type /kothenable to re-enable it.");
+                }
+            }
+
+            if (ce.message == "/kothenable")
+            {
+                if (PlayerManager.Instance.IsUserAdmin(ce.sourceUserId) && !m_running)
+                {
+                    cleanUpHill();
+                    m_running = true;
+                    roundSecondsRemaining = roundIntervalSeconds;
+                    mainloop = new Thread(main);
+                    mainloop.Priority = ThreadPriority.BelowNormal;
+                    mainloop.Start();
+                    ChatManager.Instance.SendPublicChatMessage("King of the Hill mode enabled! Type /kothdisable to disable it.");
+                }
+            }
+
+            if (ce.message == "/kothreset")
+            {
+                if (PlayerManager.Instance.IsUserAdmin(ce.sourceUserId))
+                {
+                    gamePoints = new Dictionary<Faction, int>();
+                    roundPoints = new Dictionary<Faction, int>();
+                    roundSecondsRemaining = roundIntervalSeconds;
+
+                    ChatManager.Instance.SendPublicChatMessage("King of the Hill scores reset and round restarted.");
+                }
+            }
+
+            if (ce.message == "/kothcleanup")
+            {
+                if (PlayerManager.Instance.IsUserAdmin(ce.sourceUserId))
+                {
+                    cleanUpHill();
+
+                    ChatManager.Instance.SendPublicChatMessage("The hill has been cleared.");
+                }
+            }
 
             if (ce.message == "/leaderboard")
             {
